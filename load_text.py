@@ -14,11 +14,11 @@ f = open(args.filename, "r")
 
 content = f.read()
 
-data_tuple = (args.tag, content)
+data_tuple = (args.tag, content, content)
 
 con = sqlite3.connect("db/blog-content")
 cur = con.cursor()
 
-cur.execute("INSERT INTO pages VALUES (?, ?);", data_tuple)
+cur.execute("INSERT INTO pages VALUES (?, ?) ON CONFLICT(tag) DO UPDATE SET content = ?;", data_tuple)
 
 con.commit()
