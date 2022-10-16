@@ -1,15 +1,20 @@
 import sqlite3
 import uuid
 from sys import argv
+import argparse
 
-filename = argv[1]
-content_tag = argv[2]
+parser=argparse.ArgumentParser(description="Inserts html file content into sqlite database with the given name")
 
-f = open(filename, "r")
+parser.add_argument('filename', help='Filename of html/text file')
+parser.add_argument('tag', help='Tag for html/text in the database')
+
+args = parser.parse_args()
+
+f = open(args.filename, "r")
 
 content = f.read()
 
-data_tuple = (content_tag, content)
+data_tuple = (args.tag, content)
 
 con = sqlite3.connect("db/blog-content")
 cur = con.cursor()
