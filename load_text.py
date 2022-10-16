@@ -1,6 +1,4 @@
 import sqlite3
-import uuid
-from sys import argv
 import argparse
 
 parser=argparse.ArgumentParser(description="Inserts html file content into sqlite database with the given name")
