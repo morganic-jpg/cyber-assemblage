@@ -1,15 +1,20 @@
 import sqlite3
+import uuid
 from sys import argv
 
-filename = argv[0] 
+filename = argv[1] 
 
 f = open(filename, "r")
 
-print(f.read())
+content = f.read()
+
+uid = str(uuid.uuid4())
+
+data_tuple = (uid, content)
 
 con = sqlite3.connect("db/blog-content")
 cur = con.cursor()
 
-cur.execute(f"INSERT INTO pages content VALUES {f.read()}")
+cur.execute("INSERT INTO pages VALUES (?, ?);", data_tuple)
 
 con.commit()
