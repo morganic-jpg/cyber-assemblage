@@ -2,15 +2,14 @@ import sqlite3
 import uuid
 from sys import argv
 
-filename = argv[1] 
+filename = argv[1]
+content_tag = argv[2]
 
 f = open(filename, "r")
 
 content = f.read()
 
-uid = str(uuid.uuid4())
-
-data_tuple = (uid, content)
+data_tuple = (content_tag, content)
 
 con = sqlite3.connect("db/blog-content")
 cur = con.cursor()
