@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>
+            Cyber
+        </title>
+        <style>
+            @import "{{ url_for('static', filename = 'global.css') }}";
+            body
+            {
+                background: #c720bc;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="wrapper">
+        <a href="{{ left_arrow }}"> 
+            <div class="arrow_left">
+            <ul style = "transform: (rotate(-180deg));">
+                <li></li>
+                <li></li>
+            </ul>
+            </div>
+        </a>
+        </div>
+        <div class="wrapper">
+            <a href="{{ right_arrow }}"> 
+                <div class="arrow_right">
+                <ul>
+                    <li></li>
+                    <li></li>
+                </ul>
+                </div>
+            </a>
+            </div>
+    </body>
+</html>
