@@ -88,6 +88,72 @@ def dbnet_json():
 def netsave_json():
     return request.get_json(force=True)
 
+@app.route("/addedge", methods = ['POST'])
+def add_edge():
+    con = sqlite3.connect("db/blog")
+    cur = con.cursor()
+
+    edge_data = request.get_json(force=True)
+
+    res = cur.execute("SELECT tag, adjacents FROM network;")
+
+    result = res.fetchall()
+
+    network = []
+
+    for x in result:
+        node = {"tag":x[0], "adjacents":x[1].split("|")}
+        network.append(node)
+
+    for node in network:
+        data = edge_data.copy()
+        if (node["tag"] in edge_data):
+            data.remove(node["tag"])
+            other, = data
+            if (other not in node["adjacents"]):
+                node["adjacents"].append(other)
+
+    for node in network:
+        data_tuple = (node["tag"], '|'.join(node["adjacents"]), node["tag"])
+        cur.execute("UPDATE network SET tag = ?, adjacents = ? WHERE tag = ?", data_tuple)
+    
+    con.commit()
+    return "success"
+
+@app.route("/deledge", methods = ['POST'])
+def delete_edge():
+    con = sqlite3.connect("db/blog")
+    cur = con.cursor()
+
+    edge_data = request.get_json(force=True)
+
+    res = cur.execute("SELECT tag, adjacents FROM network;")
+
+    result = res.fetchall()
+
+    network = []
+
+    for x in result:
+        node = {"tag":x[0], "adjacents":x[1].split("|")}
+        network.append(node)
+    
+    for node in network:
+        data = edge_data.copy()
+        if (node["tag"] in edge_data):
+            data.remove(node["tag"])
+            other, = data
+            if (other in node["adjacents"]):
+                node["adjacents"].remove(other)
+
+    for node in network:
+        data_tuple = (node["tag"], '|'.join(node["adjacents"]), node["tag"])
+        cur.execute("UPDATE network SET tag = ?, adjacents = ? WHERE tag = ?", data_tuple)
+
+    con.commit()
+    return "success"
+
+
+
 
 
     
