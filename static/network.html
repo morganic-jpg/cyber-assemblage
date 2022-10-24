@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Network</title>
+
+    <script
+      type="text/javascript"
+      src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"
+    ></script>
+    <script
+      type = "text/javascript"
+			src="https://code.jquery.com/jquery-3.6.1.min.js"
+    ></script>
+
+    <style type="text/css">
+      #mynetwork {
+        width: 600px;
+        height: 400px;
+        border: 1px solid lightgray;
+        background-color: #F3E600;
+      }
+    </style>
+  </head>
+  <body>
+    <p>
+      Create a simple network with some nodes and edges. Some of the events are
+      logged in the console in improve readability.
+    </p>
+
+    <div id="mynetwork"></div>
+
+    <h2 id="eventSpanHeading"></h2>
+    <pre id="eventSpanContent"></pre>
+
+    <script type="text/javascript">
+
+      var network;
+
+      $(document).ready(function() {
+          // Variable to hold request
+          var request;
+
+          // Abort any pending request
+          if (request) {
+              request.abort();
+          }
+
+          request = $.ajax({
+              url: "/dbnet",
+              type: "get",
+              dataType: "json"
+          });
+
+          request.done(function (response, textStatus, jqXHR){
+              createNetwork(response);
+          });
+
+          request.fail(function (jqXHR, textStatus, errorThrown){
+              console.error(
+                  "The following error occurred: " +
+                  textStatus, errorThrown
+              );
+          });
+      });
+
+      function objectToArray(obj) {
+        return Object.keys(obj).map(function (key) {
+          obj[key].id = key;
+          return obj[key];
+        });
+      }
+
+      function addConnections(elem, index) {
+        // need to replace this with a tree of the network, then get child direct children of the element
+        elem.connections = network.getConnectedNodes(index);
+      }
+
+      function exportNetwork() {
+        var nodes = objectToArray(network.getPositions());
+
+        nodes.forEach(addConnections);
+
+        var exportValue = JSON.stringify(nodes);
+
+        $(document).ready(function() {
+          // Variable to hold request
+          var request;
+
+          // Abort any pending request
+          if (request) {
+              request.abort();
+          }
+
+          request = $.ajax({
+              url: "/netsave",
+              type: "post",
+              contentType: "application/json",
+              data: exportValue
+          });
+
+          request.done(function (response, textStatus, jqXHR){
+              console.log(response);
+          });
+
+          request.fail(function (jqXHR, textStatus, errorThrown){
+              console.error(
+                  "The following error occurred: " +
+                  textStatus, errorThrown
+              );
+          });
+      });
+      }
+
+      function createNetwork(net_data){
+
+        let db_object = net_data.nodes
+        let pairs = net_data.edges
+      
+        let db_nodes = [];
+        let db_edges = [];
+
+        let node_ids = {};
+
+        for (let obj in db_object){
+          let x = parseInt(obj) + 1;
+          let node = {id: x, label: db_object[obj].tag, shape: "circle", color: "black", font: "14px arial white", opacity: 1, shadow: true};
+          node_ids[db_object[obj].tag] = x;
+          db_nodes.push(node);
+        }
+
+        for (let pair in pairs){
+          edge = {from: node_ids[pairs[pair][0]], to: node_ids[pairs[pair][1]]};
+          db_edges.push(edge);
+        }
+        
+
+        let nodes = new vis.DataSet(db_nodes);
+        let edges = new vis.DataSet(db_edges);
+
+        // create a network
+        let container = document.getElementById("mynetwork");
+        let data = {
+          nodes: nodes,
+          edges: edges,
+        };
+
+        let options = {
+          interaction: { hover: true },
+          manipulation: {
+            enabled: true,
+          },
+        };
+
+        network = new vis.Network(container, data, options);
+        exportNetwork();
+      }
+    </script>
+  </body>
+</html>

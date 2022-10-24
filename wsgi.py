@@ -1,5 +1,6 @@
-from flask import Flask, url_for, render_template_string, redirect
+from flask import Flask, url_for, render_template_string, redirect, jsonify, request, send_from_directory
 import sqlite3
+import os
 
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -8,6 +9,10 @@ app = Flask(__name__)
 app.wsgi_app = ProxyFix(
     app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
 )
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 @app.route("/page/<uuid>")
 def render_page(uuid):
@@ -51,6 +56,37 @@ def random_page():
 
     return redirect(first_page)
 
+@app.route("/dbnet")
+def dbnet_json():
+    con = sqlite3.connect("db/blog")
+    cur = con.cursor()
+
+    res = cur.execute("SELECT tag, adjacents FROM network;")
+
+    result = res.fetchall()
+
+    network = []
+
+    for x in result:
+        node = {"tag":x[0], "adjacents":x[1].split("|")}
+        network.append(node)
+
+    pairs = []
+
+    for node in network:
+        for adj in node["adjacents"]:
+            pair = [node["tag"], adj]
+            pair.sort()
+            if (pair not in pairs):
+                pairs.append(pair)
+    
+    net_data = {"nodes":network, "edges":pairs}
+
+    return jsonify(net_data)
+
+@app.route("/netsave", methods = ['POST'])
+def netsave_json():
+    return request.get_json(force=True)
 
 
 
