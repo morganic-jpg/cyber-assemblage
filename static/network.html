@@ -1,275 +1,286 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <title>Network</title>
+	<head>
+		<title>Network</title>
 
-    <script
-      type="text/javascript"
-      src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"
-    ></script>
-    <script
-      type = "text/javascript"
-			src="https://code.jquery.com/jquery-3.6.1.min.js"
-    ></script>
+		<script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+		<script type="text/javascript" src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
+		<link
+			rel="stylesheet"
+			href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,300,0,0"
+		/>
 
-    <style type="text/css">
-      #mynetwork {
-        position:fixed;
-        padding:0;
-        margin:0;
+		<style type="text/css">
+			#mynetwork {
+				position: fixed;
+				padding: 0;
+				margin: 0;
 
-        top:0;
-        left:0;
+				top: 0;
+				left: 0;
 
-        width: 100%;
-        height: 100%;
-        background-color: #F3E600;
-      }
-    </style>
-  </head>
-  <body>
-    <p>
-      Create a simple network with some nodes and edges. Some of the events are
-      logged in the console in improve readability.
-    </p>
+				width: 100%;
+				height: 100%;
+				background-color: #f3e600;
+			}
+			.symbol {
+				background-color: black;
+				color: white;
+				border-radius: 100%;
+				margin: auto;
+        padding: 1rem;
+				width: 4rem;
+				height: 4rem;
+				text-align: center;
+				font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 24;
+				line-height: normal;
+				font-size: 50px;
+			}
+			.menu {
+				display: flex;
+				flex-direction: row;
+				position: absolute;
+				bottom: 1rem;
+				right: 1rem;
+        justify-content: space-between;
+        gap: 1rem;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="mynetwork"></div>
 
-    <div id="mynetwork"></div>
+		<div class="menu">
+			<div class="material-symbols-outlined symbol" onclick="network.addEdgeMode();">conversion_path</div>
+			<div class="material-symbols-outlined symbol"onclick="network.addNodeMode()">add</div>
+			<div class="material-symbols-outlined symbol"onclick="alert('editing idk')">edit</div>
+			<div class="material-symbols-outlined symbol"onclick="network.deleteSelected();">delete</div>
+		</div>
 
-    <h2 id="eventSpanHeading"></h2>
-    <pre id="eventSpanContent"></pre>
+		<h2 id="eventSpanHeading"></h2>
+		<pre id="eventSpanContent"></pre>
 
-    <script type="text/javascript">
+		<script type="text/javascript">
+			var network;
 
-      var network;
+			$(document).ready(function () {
+				// Variable to hold request
+				var request;
 
-      $(document).ready(function() {
-          // Variable to hold request
-          var request;
+				// Abort any pending request
+				if (request) {
+					request.abort();
+				}
 
-          // Abort any pending request
-          if (request) {
-              request.abort();
-          }
+				request = $.ajax({
+					url: "/dbnet",
+					type: "get",
+					dataType: "json",
+				});
 
-          request = $.ajax({
-              url: "/dbnet",
-              type: "get",
-              dataType: "json"
-          });
+				request.done(function (response, textStatus, jqXHR) {
+					createNetwork(response);
+				});
 
-          request.done(function (response, textStatus, jqXHR){
-              createNetwork(response);
-          });
+				request.fail(function (jqXHR, textStatus, errorThrown) {
+					console.error("The following error occurred: " + textStatus, errorThrown);
+				});
+			});
 
-          request.fail(function (jqXHR, textStatus, errorThrown){
-              console.error(
-                  "The following error occurred: " +
-                  textStatus, errorThrown
-              );
-          });
-      });
+			function objectToArray(obj) {
+				return Object.keys(obj).map(function (key) {
+					obj[key].id = key;
+					return obj[key];
+				});
+			}
 
-      function objectToArray(obj) {
-        return Object.keys(obj).map(function (key) {
-          obj[key].id = key;
-          return obj[key];
-        });
-      }
+			function addConnections(elem, index) {
+				// need to replace this with a tree of the network, then get child direct children of the element
+				elem.connections = network.getConnectedNodes(index);
+			}
 
-      function addConnections(elem, index) {
-        // need to replace this with a tree of the network, then get child direct children of the element
-        elem.connections = network.getConnectedNodes(index);
-      }
+			function exportNetwork() {
+				var nodes = objectToArray(network.getPositions());
 
-      function exportNetwork() {
-        var nodes = objectToArray(network.getPositions());
+				nodes.forEach(addConnections);
 
-        nodes.forEach(addConnections);
+				var exportValue = JSON.stringify(nodes);
 
-        var exportValue = JSON.stringify(nodes);
+				$(document).ready(function () {
+					// Variable to hold request
+					var request;
 
-        $(document).ready(function() {
-          // Variable to hold request
-          var request;
+					// Abort any pending request
+					if (request) {
+						request.abort();
+					}
 
-          // Abort any pending request
-          if (request) {
-              request.abort();
-          }
+					request = $.ajax({
+						url: "/netsave",
+						type: "post",
+						contentType: "application/json",
+						data: exportValue,
+					});
 
-          request = $.ajax({
-              url: "/netsave",
-              type: "post",
-              contentType: "application/json",
-              data: exportValue
-          });
+					request.done(function (response, textStatus, jqXHR) {
+						//console.log(response);
+					});
 
-          request.done(function (response, textStatus, jqXHR){
-              //console.log(response);
-          });
+					request.fail(function (jqXHR, textStatus, errorThrown) {
+						console.error("The following error occurred: " + textStatus, errorThrown);
+					});
+				});
+			}
 
-          request.fail(function (jqXHR, textStatus, errorThrown){
-              console.error(
-                  "The following error occurred: " +
-                  textStatus, errorThrown
-              );
-          });
-      });
-      }
-
-      /*function postNodeChange(nodeData){
+			/*function postNodeChange(nodeData){
 
       }*/
 
-      function postEdgeAdd(edgeData, node_ids, pairs){
-        let adjacent_pages = [];
-        let exists = false;
-        let connected = network.getConnectedNodes(edgeData.from);
+			function postEdgeAdd(edgeData, node_ids, pairs) {
+				let adjacent_pages = [];
+				let exists = false;
+				let connected = network.getConnectedNodes(edgeData.from);
 
-        for (let id in connected){
-          if (connected[id] == edgeData.to){
-            exists = true;
-          }
-        }
+				for (let id in connected) {
+					if (connected[id] == edgeData.to) {
+						exists = true;
+					}
+				}
 
-        Object.keys(node_ids).forEach(key => {
-          if (node_ids[key] == edgeData.from || node_ids[key] == edgeData.to)
-          {
-            adjacent_pages.push(key);
-          }
-        });
+				Object.keys(node_ids).forEach((key) => {
+					if (node_ids[key] == edgeData.from || node_ids[key] == edgeData.to) {
+						adjacent_pages.push(key);
+					}
+				});
 
-        
-        adj_data = JSON.stringify(adjacent_pages.sort());
+				adj_data = JSON.stringify(adjacent_pages.sort());
 
-        if (!exists && (edgeData.from != edgeData.to)){
+				if (!exists && edgeData.from != edgeData.to) {
+					$(document).ready(function () {
+						// Variable to hold request
+						var request;
 
-          $(document).ready(function() {
-            // Variable to hold request
-            var request;
+						// Abort any pending request
+						if (request) {
+							request.abort();
+						}
 
-            // Abort any pending request
-            if (request) {
-                request.abort();
-            }
+						request = $.ajax({
+							url: "/addedge",
+							type: "post",
+							contentType: "application/json",
+							data: adj_data,
+						});
 
-            request = $.ajax({
-                url: "/addedge",
-                type: "post",
-                contentType: "application/json",
-                data: adj_data
-            });
+						request.done(function (response, textStatus, jqXHR) {
+							console.log(response);
+						});
 
-            request.done(function (response, textStatus, jqXHR){
-                console.log(response);
-            });
+						request.fail(function (jqXHR, textStatus, errorThrown) {
+							console.error("The following error occurred: " + textStatus, errorThrown);
+						});
+					});
+					console.log(adjacent_pages);
+					return edgeData;
+				} else {
+					return null;
+				}
+			}
 
-            request.fail(function (jqXHR, textStatus, errorThrown){
-                console.error(
-                    "The following error occurred: " +
-                    textStatus, errorThrown
-                );
-            });
-          });
-          console.log(adjacent_pages);
-          return edgeData;
-        }
-        else{
-          return null;
-        }
-      }
+			function postEdgeDelete(edgeData, node_ids, pairs) {
+				let adjacent_pages = [];
+				let exists = false;
+				let edgeId = edgeData.edges[0];
+				let connected = network.getConnectedNodes(edgeId);
 
-      function postEdgeDelete(edgeData, node_ids, pairs){
-        let adjacent_pages = [];
-        let exists = false;
-        let edgeId = edgeData.edges[0];
-        let connected = network.getConnectedNodes(edgeId);
+				Object.keys(node_ids).forEach((key) => {
+					if (node_ids[key] == connected[0] || node_ids[key] == connected[1]) {
+						adjacent_pages.push(key);
+					}
+				});
 
-        Object.keys(node_ids).forEach(key => {
-          if (node_ids[key] == connected[0] || node_ids[key] == connected[1])
-          {
-            adjacent_pages.push(key);
-          }
-        });
+				adj_data = JSON.stringify(adjacent_pages.sort());
 
-        
-        adj_data = JSON.stringify(adjacent_pages.sort());
+				$(document).ready(function () {
+					// Variable to hold request
+					var request;
 
-        $(document).ready(function() {
-          // Variable to hold request
-          var request;
+					// Abort any pending request
+					if (request) {
+						request.abort();
+					}
 
-          // Abort any pending request
-          if (request) {
-              request.abort();
-          }
+					request = $.ajax({
+						url: "/deledge",
+						type: "post",
+						contentType: "application/json",
+						data: adj_data,
+					});
 
-          request = $.ajax({
-              url: "/deledge",
-              type: "post",
-              contentType: "application/json",
-              data: adj_data
-          });
+					request.done(function (response, textStatus, jqXHR) {
+						console.log(response);
+					});
 
-          request.done(function (response, textStatus, jqXHR){
-              console.log(response);
-          });
+					request.fail(function (jqXHR, textStatus, errorThrown) {
+						console.error("The following error occurred: " + textStatus, errorThrown);
+					});
+				});
 
-          request.fail(function (jqXHR, textStatus, errorThrown){
-              console.error(
-                  "The following error occurred: " +
-                  textStatus, errorThrown
-              );
-          });
-        });
+				return edgeData;
+			}
 
-          return edgeData;
-        }
+			function createNetwork(net_data) {
+				let db_object = net_data.nodes;
+				let pairs = net_data.edges;
 
-      function createNetwork(net_data){
+				let db_nodes = [];
+				let db_edges = [];
 
-        let db_object = net_data.nodes
-        let pairs = net_data.edges
-      
-        let db_nodes = [];
-        let db_edges = [];
+				let node_ids = {};
 
-        let node_ids = {};
+				for (let obj in db_object) {
+					let x = parseInt(obj) + 1;
+					let node = {
+						id: x,
+						label: db_object[obj].tag,
+						shape: "circle",
+						color: "black",
+						font: "14px arial white",
+						opacity: 1,
+						shadow: true,
+					};
+					node_ids[db_object[obj].tag] = x;
+					db_nodes.push(node);
+				}
 
-        for (let obj in db_object){
-          let x = parseInt(obj) + 1;
-          let node = {id: x, label: db_object[obj].tag, shape: "circle", color: "black", font: "14px arial white", opacity: 1, shadow: true};
-          node_ids[db_object[obj].tag] = x;
-          db_nodes.push(node);
-        }
+				for (let pair in pairs) {
+					edge = { from: node_ids[pairs[pair][0]], to: node_ids[pairs[pair][1]] };
+					db_edges.push(edge);
+				}
 
-        for (let pair in pairs){
-          edge = {from: node_ids[pairs[pair][0]], to: node_ids[pairs[pair][1]]};
-          db_edges.push(edge);
-        }
-        
+				let nodes = new vis.DataSet(db_nodes);
+				let edges = new vis.DataSet(db_edges);
 
-        let nodes = new vis.DataSet(db_nodes);
-        let edges = new vis.DataSet(db_edges);
+				// create a network
+				let container = document.getElementById("mynetwork");
+				let data = {
+					nodes: nodes,
+					edges: edges,
+				};
 
-        // create a network
-        let container = document.getElementById("mynetwork");
-        let data = {
-          nodes: nodes,
-          edges: edges,
-        };
+				let options = {
+					interaction: { hover: true },
+					manipulation: {
 
-        let options = {
-          interaction: { hover: true },
-          manipulation: {
+            enabled: false,
 
-            addEdge: function(edgeData, callback) {
-              callback(postEdgeAdd(edgeData, node_ids, pairs));
-            },
+						addEdge: function (edgeData, callback) {
+							callback(postEdgeAdd(edgeData, node_ids, pairs));
+						},
 
-            deleteEdge: function(edgeData, callback){
-              callback(postEdgeDelete(edgeData, node_ids, pairs));
-            }/*,
+						deleteEdge: function (edgeData, callback) {
+							callback(postEdgeDelete(edgeData, node_ids, pairs));
+						} /*,
 
             addNode: function(nodeData, callback) {
               
@@ -279,14 +290,13 @@
             deleteNode: function(nodeData, callback){
 
               callback(nodeData)
-            }*/
+            }*/,
+					},
+				};
 
-          },
-        };
-
-        network = new vis.Network(container, data, options);
-        exportNetwork();
-      }
-    </script>
-  </body>
+				network = new vis.Network(container, data, options);
+				exportNetwork();
+			}
+		</script>
+	</body>
 </html>
